@@ -1,36 +1,94 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TabataPro — Tabata & HIIT Web Timer
 
-## Getting Started
+Cronômetro web responsivo de treino intervalado (Tabata / HIIT), projetado com visual esportivo de alto contraste, motor de tempo de alta precisão sem drift e síntese sonora via Web Audio API.
 
-First, run the development server:
+## ✨ Funcionalidades
+
+- **Início Rápido e Presets Prontos:** Protocolos **Classic Tabata** (20s Work / 10s Rest × 8) e **HIIT** (40s Work / 20s Rest × 10) prontos para iniciar com 1 clique.
+- **Criador e Editor de Treinos Personalizados:**
+  - Configuração de tempo de preparação inicial (`Prepare`).
+  - Múltiplos **Rounds** com número de repetições (`Repeats`) independente.
+  - Múltiplos **Intervalos** por round (`Work`, `Rest`, `Prepare`, `Cooldown`) com nomes e durações customizáveis.
+  - Configuração de **Ciclos (`Cycles`)** e descanso entre ciclos.
+  - Seletor de cores de destaque e cálculo em tempo real da duração total.
+- **Execução do Treino (Timer de Alta Precisão):**
+  - Mudança dinâmica de cores de fundo em tela cheia de acordo com a etapa:
+    - 🟨 **PREPARE** (`#FFFF2E`)
+    - 🟩 **WORK** (`#83FF36`)
+    - 🟥 **REST** (`#FF3B30`)
+  - Exibição da próxima etapa, barra de progresso do intervalo/treino e contadores de `Repeats` e `Cycles` restantes.
+  - Controles completos: **Pausar**, **Continuar**, **Avançar etapa**, **Voltar etapa**, **Parar** e **Modo Tela Cheia**.
+  - Suporte a **Screen Wake Lock API** (mantém a tela acesa durante o treino).
+- **Alertas Sonoros e Vibração:**
+  - Beeps regressivos nos últimos 3 segundos (`3, 2, 1`) gerados via **Web Audio API** (zero latência e funcionamento 100% offline).
+  - Alertas sonoros distintos para início de `WORK`, início de `REST` e conclusão do treino (`FINISHED`).
+  - Feedback háptico via **Vibration API** em dispositivos móveis compatíveis.
+- **Persistência Local:** Todos os treinos personalizados, preferências de áudio e último treino executado ficam salvos no `LocalStorage`.
+
+---
+
+## 🛠️ Stack Técnica
+
+- **[Next.js 16](https://nextjs.org/)** (App Router + Turbopack)
+- **[React 19](https://react.dev/)** + **TypeScript**
+- **[Tailwind CSS v4](https://tailwindcss.com/)**
+- **[Zustand](https://zustand-demo.pmnd.rs/)** (Gerenciamento de estado)
+- **[Lucide React](https://lucide.dev/)** (Ícones)
+- **Web APIs:** Web Audio API, Vibration API, Fullscreen API, Screen Wake Lock API, LocalStorage
+
+---
+
+## 🚀 Como Executar Localmente
+
+1. **Instale as dependências:**
+
+```bash
+npm install
+```
+
+2. **Inicie o servidor de desenvolvimento:**
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+3. **Acesse no navegador:**
+   Abra [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+4. **Build de produção:**
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm start
+```
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## 📂 Estrutura do Projeto
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```text
+src/
+├── app/
+│   ├── page.tsx                    # Dashboard inicial (Quick Start, Meus Treinos, Presets)
+│   └── workout/
+│       ├── new/page.tsx            # Criação de novo treino
+│       └── [id]/
+│           ├── page.tsx            # Edição / personalização de treino
+│           └── play/page.tsx       # Tela principal de execução do cronômetro
+├── components/
+│   ├── layout/                     # AppHeader, PageContainer, BottomActions
+│   ├── timer/                      # TimerDisplay, TimerHeader, TimerControls, TimerNext, TimerStats, TimerProgress
+│   ├── workout/                    # WorkoutCard, WorkoutEditor, RoundEditor, IntervalEditor, Inputs
+│   └── ui/                         # Button, Card, Input
+├── constants/                      # Presets oficiais e tokens do tema esportivo
+├── engine/                         # Timer Engine (baseado em Date.now()) e Workout Runner
+├── services/                       # Serviços de Web Audio/Vibração e LocalStorage
+├── stores/                         # Stores Zustand (timer, workout, settings)
+└── types/                          # Interfaces TypeScript (Workout, TimerState)
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 📄 Especificação
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Para mais detalhes sobre requisitos funcionais, modelo de dados e roadmap futuro (PWA, autenticação e estatísticas), consulte o arquivo [SPEC-tabata-web.md](./SPEC-tabata-web.md).
