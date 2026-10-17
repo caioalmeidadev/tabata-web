@@ -1,69 +1,181 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useEffect } from "react";
+import Link from "next/link";
+import {
+  Flame,
+  Plus,
+  Sparkles,
+  Volume2,
+  VolumeX,
+  Zap,
+} from "lucide-react";
+import { AppHeader } from "@/components/layout/AppHeader";
+import { PageContainer } from "@/components/layout/PageContainer";
+import { Button } from "@/components/ui/button";
+import { WorkoutCard } from "@/components/workout/WorkoutCard";
+import { PRESET_WORKOUTS } from "@/constants/presets";
+import { getTotalWorkoutDurationSeconds } from "@/engine/workout-runner";
+import { formatSeconds } from "@/lib/utils";
+import { useSettingsStore } from "@/stores/settings.store";
+import { useWorkoutStore } from "@/stores/workout.store";
+
+export default function DashboardPage() {
+  const hydrateWorkouts = useWorkoutStore((s) => s.hydrate);
+  const customWorkouts = useWorkoutStore((s) => s.customWorkouts);
+  const lastWorkoutId = useWorkoutStore((s) => s.lastWorkoutId);
+  const getWorkoutById = useWorkoutStore((s) => s.getWorkoutById);
+  const deleteWorkout = useWorkoutStore((s) => s.deleteWorkout);
+
+  const hydrateSettings = useSettingsStore((s) => s.hydrate);
+  const audioEnabled = useSettingsStore((s) => s.audioEnabled);
+  const toggleAudio = useSettingsStore((s) => s.toggleAudio);
+
+  useEffect(() => {
+    hydrateWorkouts();
+    hydrateSettings();
+  }, [hydrateWorkouts, hydrateSettings]);
+
+  const quickStartWorkout =
+    (lastWorkoutId ? getWorkoutById(lastWorkoutId) : undefined) ??
+    PRESET_WORKOUTS[0];
+
+  const quickStartDuration = getTotalWorkoutDurationSeconds(quickStartWorkout);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <div className="flex min-h-screen flex-col">
+      <AppHeader
+        rightSlot={
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={toggleAudio}
+              aria-label={audioEnabled ? "Desativar alertas sonoros" : "Ativar alertas sonoros"}
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-[#171717] text-white transition hover:bg-[#232323] cursor-pointer"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+              {audioEnabled ? (
+                <Volume2 className="h-5 w-5 text-[#83FF36]" />
+              ) : (
+                <VolumeX className="h-5 w-5 text-[#9CA3AF]" />
+              )}
+            </button>
+
+            <Link href="/workout/new">
+              <Button size="sm" className="h-10">
+                <Plus className="h-4 w-4 stroke-[2.5]" />
+                Criar Treino
+              </Button>
+            </Link>
+          </div>
+        }
+      />
+
+      <PageContainer className="gap-8">
+        {/* Hero / Quick Start */}
+        <section className="relative overflow-hidden rounded-3xl border border-[#83FF36]/30 bg-gradient-to-br from-[#171717] via-[#171717] to-[#83FF36]/15 p-6 md:p-8">
+          <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
+            <div className="flex flex-col gap-2">
+              <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[#83FF36]/15 px-3 py-1 font-condensed text-xs font-bold uppercase tracking-widest text-[#83FF36]">
+                <Zap className="h-3.5 w-3.5 fill-current" />
+                INÍCIO RÁPIDO
+              </div>
+              <h1 className="font-display text-4xl uppercase tracking-wide text-white md:text-5xl">
+                {quickStartWorkout.name}
+              </h1>
+              <p className="max-w-xl text-sm text-[#9CA3AF] md:text-base">
+                Pronto para treinar? Inicie imediatamente seu último treino ou
+                o protocolo Tabata clássico com cronômetro de alta precisão.
+              </p>
+              <div className="mt-1 flex flex-wrap items-center gap-4 font-condensed text-sm font-bold uppercase tracking-wider text-white/90">
+                <span>Duração: {formatSeconds(quickStartDuration)}</span>
+                <span>•</span>
+                <span>Prepare: {quickStartWorkout.prepareDuration}s</span>
+                <span>•</span>
+                <span>Ciclos: {quickStartWorkout.cycles}x</span>
+              </div>
+            </div>
+
+            <div className="flex shrink-0 flex-col gap-3 sm:flex-row">
+              <Link href={`/workout/${quickStartWorkout.id}/play`}>
+                <Button size="lg" className="w-full sm:w-auto">
+                  <Flame className="h-5 w-5 fill-current" />
+                  Iniciar Agora
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* Meus Treinos Salvos */}
+        <section className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-display text-2xl uppercase tracking-wide md:text-3xl">
+                Meus Treinos
+              </h2>
+              <p className="text-xs text-[#9CA3AF] md:text-sm">
+                Treinos personalizados salvos neste dispositivo
+              </p>
+            </div>
+
+            <Link href="/workout/new">
+              <Button variant="secondary" size="sm">
+                <Plus className="h-4 w-4 text-[#83FF36]" />
+                Novo Treino
+              </Button>
+            </Link>
+          </div>
+
+          {customWorkouts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-white/15 bg-[#171717]/50 p-8 text-center">
+              <Sparkles className="h-8 w-8 text-[#83FF36]" />
+              <div className="max-w-md">
+                <h3 className="font-display text-xl uppercase tracking-wide text-white">
+                  Nenhum treino personalizado ainda
+                </h3>
+                <p className="mt-1 text-sm text-[#9CA3AF]">
+                  Crie seu próprio treino configurando tempos de preparação,
+                  esforço, descanso, repetições e múltiplos ciclos.
+                </p>
+              </div>
+              <Link href="/workout/new" className="mt-1">
+                <Button>
+                  <Plus className="h-4 w-4" />
+                  Criar Meu Primeiro Treino
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              {customWorkouts.map((workout) => (
+                <WorkoutCard
+                  key={workout.id}
+                  workout={workout}
+                  onDelete={deleteWorkout}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Presets */}
+        <section className="flex flex-col gap-4">
+          <div>
+            <h2 className="font-display text-2xl uppercase tracking-wide md:text-3xl">
+              Presets Prontos
+            </h2>
+            <p className="text-xs text-[#9CA3AF] md:text-sm">
+              Protocolos clássicos prontos para iniciar com 1 clique
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            {PRESET_WORKOUTS.map((preset) => (
+              <WorkoutCard key={preset.id} workout={preset} />
+            ))}
+          </div>
+        </section>
+      </PageContainer>
     </div>
   );
 }

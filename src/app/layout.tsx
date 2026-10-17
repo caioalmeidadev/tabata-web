@@ -26,6 +26,7 @@ export const metadata: Metadata = {
   title: "Tabata Web Timer | Treino Intervalado HIIT",
   description:
     "Cronômetro esportivo de alto contraste para treinos Tabata e HIIT.",
+  manifest: "/manifest.json",
 };
 
 export const viewport: Viewport = {

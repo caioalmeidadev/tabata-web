@@ -1,0 +1,10 @@
+{
+  "name": "Tabata Pro — HIIT Interval Timer",
+  "short_name": "TabataPro",
+  "description": "Cronômetro esportivo de alto contraste para treinos Tabata e HIIT.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A0A0A",
+  "theme_color": "#83FF36",
+  "orientation": "portrait"
+}
