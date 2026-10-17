@@ -1,10 +1,62 @@
 {
-  "name": "Tabata Pro — HIIT Interval Timer",
+  "id": "/",
+  "name": "TabataPro — HIIT Interval Timer",
   "short_name": "TabataPro",
   "description": "Cronômetro esportivo de alto contraste para treinos Tabata e HIIT.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["fullscreen", "standalone"],
   "background_color": "#0A0A0A",
   "theme_color": "#83FF36",
-  "orientation": "portrait"
+  "orientation": "portrait",
+  "categories": ["fitness", "health", "sports"],
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Iniciar Classic Tabata",
+      "short_name": "Classic Tabata",
+      "description": "Inicia imediatamente o protocolo Tabata Clássico (4 min)",
+      "url": "/workout/preset-classic-tabata/play",
+      "icons": [
+        {
+          "src": "/icons/icon-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Criar Novo Treino",
+      "short_name": "Novo Treino",
+      "description": "Abre o editor para criar um treino personalizado",
+      "url": "/workout/new",
+      "icons": [
+        {
+          "src": "/icons/icon-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
 }

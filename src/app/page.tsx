@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import {
   Flame,
+  Maximize2,
   Plus,
   Sparkles,
   Volume2,
@@ -12,11 +13,12 @@ import {
 } from "lucide-react";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { PageContainer } from "@/components/layout/PageContainer";
+import { InstallPwaBanner } from "@/components/pwa/InstallPwaBanner";
 import { Button } from "@/components/ui/button";
 import { WorkoutCard } from "@/components/workout/WorkoutCard";
 import { PRESET_WORKOUTS } from "@/constants/presets";
 import { getTotalWorkoutDurationSeconds } from "@/engine/workout-runner";
-import { formatSeconds } from "@/lib/utils";
+import { cn, formatSeconds } from "@/lib/utils";
 import { useSettingsStore } from "@/stores/settings.store";
 import { useWorkoutStore } from "@/stores/workout.store";
 
@@ -30,6 +32,8 @@ export default function DashboardPage() {
   const hydrateSettings = useSettingsStore((s) => s.hydrate);
   const audioEnabled = useSettingsStore((s) => s.audioEnabled);
   const toggleAudio = useSettingsStore((s) => s.toggleAudio);
+  const autoFullscreen = useSettingsStore((s) => s.autoFullscreen);
+  const toggleAutoFullscreen = useSettingsStore((s) => s.toggleAutoFullscreen);
 
   useEffect(() => {
     hydrateWorkouts();
@@ -49,8 +53,35 @@ export default function DashboardPage() {
           <div className="flex items-center gap-2">
             <button
               type="button"
+              onClick={toggleAutoFullscreen}
+              title={
+                autoFullscreen
+                  ? "Tela cheia automática ativada"
+                  : "Ativar tela cheia automática ao iniciar treino"
+              }
+              aria-label={
+                autoFullscreen
+                  ? "Desativar tela cheia automática"
+                  : "Ativar tela cheia automática"
+              }
+              className={cn(
+                "flex h-10 w-10 items-center justify-center rounded-xl border transition cursor-pointer",
+                autoFullscreen
+                  ? "border-[#83FF36]/40 bg-[#83FF36]/15 text-[#83FF36]"
+                  : "border-white/10 bg-[#171717] text-[#9CA3AF] hover:bg-[#232323] hover:text-white"
+              )}
+            >
+              <Maximize2 className="h-4 w-4" />
+            </button>
+
+            <button
+              type="button"
               onClick={toggleAudio}
-              aria-label={audioEnabled ? "Desativar alertas sonoros" : "Ativar alertas sonoros"}
+              aria-label={
+                audioEnabled
+                  ? "Desativar alertas sonoros"
+                  : "Ativar alertas sonoros"
+              }
               className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-[#171717] text-white transition hover:bg-[#232323] cursor-pointer"
             >
               {audioEnabled ? (
@@ -71,6 +102,8 @@ export default function DashboardPage() {
       />
 
       <PageContainer className="gap-8">
+        <InstallPwaBanner />
+
         {/* Hero / Quick Start */}
         <section className="relative overflow-hidden rounded-3xl border border-[#83FF36]/30 bg-gradient-to-br from-[#171717] via-[#171717] to-[#83FF36]/15 p-6 md:p-8">
           <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
