@@ -33,8 +33,10 @@ function PlayWorkoutContent() {
   const setLastWorkoutId = useWorkoutStore((s) => s.setLastWorkoutId);
 
   const hydrateSettings = useSettingsStore((s) => s.hydrate);
+  const settingsHydrated = useSettingsStore((s) => s.hydrated);
   const audioEnabled = useSettingsStore((s) => s.audioEnabled);
   const toggleAudio = useSettingsStore((s) => s.toggleAudio);
+  const autoFullscreen = useSettingsStore((s) => s.autoFullscreen);
 
   const timer = useTimerStore((s) => s.timer);
   const start = useTimerStore((s) => s.start);
@@ -54,8 +56,7 @@ function PlayWorkoutContent() {
   const workout = getWorkoutById(id);
 
   useEffect(() => {
-    if (!workoutsHydrated) return;
-    if (!workout) return;
+    if (!workoutsHydrated || ! workout) return;
 
     setLastWorkoutId(workout.id);
     start(workout);
@@ -65,7 +66,28 @@ function PlayWorkoutContent() {
     };
   }, [workoutsHydrated, workout, start, stop, setLastWorkoutId]);
 
-  // Keep screen awake during workout if supported
+  // Auto-enter fullscreen if enabled in settings and sync fullscreenchange
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    const handleFsChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+
+    document.addEventListener("fullscreenchange", handleFsChange);
+
+    if (settingsHydrated && autoFullscreen && !document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {
+        // Browsers may block fullscreen if not triggered directly by user gesture
+      });
+    }
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFsChange);
+    };
+  }, [settingsHydrated, autoFullscreen]);
+
+  // Keep screen awake during workout and re-acquire on visibilitychange
   useEffect(() => {
     let wakeLock: { release: () => Promise<void> } | null = null;
 
@@ -73,7 +95,8 @@ function PlayWorkoutContent() {
       if (
         typeof navigator !== "undefined" &&
         "wakeLock" in navigator &&
-        timer.status === "running"
+        timer.status === "running" &&
+        document.visibilityState === "visible"
       ) {
         try {
           wakeLock = await (
@@ -91,9 +114,17 @@ function PlayWorkoutContent() {
       }
     }
 
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && timer.status === "running") {
+        requestWakeLock();
+      }
+    };
+
     requestWakeLock();
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       wakeLock?.release().catch(() => {});
     };
   }, [timer.status]);
@@ -114,6 +145,9 @@ function PlayWorkoutContent() {
   };
 
   const handleExit = () => {
+    if (typeof document !== "undefined" && document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
     stop();
     router.push("/");
   };

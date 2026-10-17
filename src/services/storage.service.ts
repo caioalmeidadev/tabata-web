@@ -10,12 +10,14 @@ export interface AppSettings {
   audioEnabled: boolean;
   volume: number; // 0 to 1
   vibrationEnabled: boolean;
+  autoFullscreen: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
   audioEnabled: true,
   volume: 0.85,
   vibrationEnabled: true,
+  autoFullscreen: false,
 };
 
 function isBrowser(): boolean {
