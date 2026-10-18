@@ -1,3 +1,7 @@
+import type {
+  EndTimerSoundId,
+  StartTimerSoundId,
+} from "@/services/audio.service";
 import type { Workout } from "@/types/workout";
 
 export const STORAGE_KEYS = {
@@ -11,6 +15,8 @@ export interface AppSettings {
   volume: number; // 0 to 1
   vibrationEnabled: boolean;
   autoFullscreen: boolean;
+  startSound: StartTimerSoundId;
+  endSound: EndTimerSoundId;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -18,10 +24,14 @@ export const DEFAULT_SETTINGS: AppSettings = {
   volume: 0.85,
   vibrationEnabled: true,
   autoFullscreen: false,
+  startSound: "boxing-bell",
+  endSound: "double-gong",
 };
 
 function isBrowser(): boolean {
-  return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
+  return (
+    typeof window !== "undefined" && typeof window.localStorage !== "undefined"
+  );
 }
 
 export const storageService = {
@@ -40,7 +50,10 @@ export const storageService = {
   saveWorkouts(workouts: Workout[]): void {
     if (!isBrowser()) return;
     try {
-      window.localStorage.setItem(STORAGE_KEYS.WORKOUTS, JSON.stringify(workouts));
+      window.localStorage.setItem(
+        STORAGE_KEYS.WORKOUTS,
+        JSON.stringify(workouts)
+      );
     } catch {
       // Ignore quota errors
     }
@@ -64,7 +77,10 @@ export const storageService = {
   saveSettings(settings: AppSettings): void {
     if (!isBrowser()) return;
     try {
-      window.localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+      window.localStorage.setItem(
+        STORAGE_KEYS.SETTINGS,
+        JSON.stringify(settings)
+      );
     } catch {
       // Ignore quota errors
     }

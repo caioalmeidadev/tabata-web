@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Flame,
   Maximize2,
   Plus,
+  SlidersHorizontal,
   Sparkles,
   Volume2,
   VolumeX,
@@ -14,6 +15,7 @@ import {
 import { AppHeader } from "@/components/layout/AppHeader";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { InstallPwaBanner } from "@/components/pwa/InstallPwaBanner";
+import { SoundSettingsModal } from "@/components/settings/SoundSettingsModal";
 import { Button } from "@/components/ui/button";
 import { WorkoutCard } from "@/components/workout/WorkoutCard";
 import { PRESET_WORKOUTS } from "@/constants/presets";
@@ -34,6 +36,8 @@ export default function DashboardPage() {
   const toggleAudio = useSettingsStore((s) => s.toggleAudio);
   const autoFullscreen = useSettingsStore((s) => s.autoFullscreen);
   const toggleAutoFullscreen = useSettingsStore((s) => s.toggleAutoFullscreen);
+
+  const [isSoundModalOpen, setIsSoundModalOpen] = useState(false);
 
   useEffect(() => {
     hydrateWorkouts();
@@ -72,6 +76,19 @@ export default function DashboardPage() {
               )}
             >
               <Maximize2 className="h-4 w-4" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsSoundModalOpen(true)}
+              title="Escolher som de início e fim do timer"
+              aria-label="Personalizar sons do timer"
+              className="flex h-10 items-center gap-1.5 rounded-xl border border-white/10 bg-[#171717] px-3 text-white transition hover:bg-[#232323] cursor-pointer"
+            >
+              <SlidersHorizontal className="h-4 w-4 text-[#83FF36]" />
+              <span className="hidden font-condensed text-xs font-bold uppercase tracking-wider sm:inline">
+                Sons
+              </span>
             </button>
 
             <button
@@ -209,6 +226,11 @@ export default function DashboardPage() {
           </div>
         </section>
       </PageContainer>
+
+      <SoundSettingsModal
+        open={isSoundModalOpen}
+        onClose={() => setIsSoundModalOpen(false)}
+      />
     </div>
   );
 }

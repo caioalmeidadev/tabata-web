@@ -1,6 +1,13 @@
 "use client";
 
-import { ArrowLeft, Maximize2, Minimize2, Volume2, VolumeX } from "lucide-react";
+import {
+  ArrowLeft,
+  Maximize2,
+  Minimize2,
+  SlidersHorizontal,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
 import { formatMs } from "@/lib/utils";
 
 interface TimerHeaderProps {
@@ -9,6 +16,7 @@ interface TimerHeaderProps {
   audioEnabled: boolean;
   isFullscreen: boolean;
   onToggleAudio: () => void;
+  onOpenSoundSettings: () => void;
   onToggleFullscreen: () => void;
   onExit: () => void;
 }
@@ -19,6 +27,7 @@ export function TimerHeader({
   audioEnabled,
   isFullscreen,
   onToggleAudio,
+  onOpenSoundSettings,
   onToggleFullscreen,
   onExit,
 }: TimerHeaderProps) {
@@ -44,6 +53,15 @@ export function TimerHeader({
       </div>
 
       <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={onOpenSoundSettings}
+          aria-label="Personalizar sons do timer"
+          className="flex h-10 w-10 items-center justify-center rounded-xl bg-black/20 backdrop-blur-sm transition hover:bg-black/35 cursor-pointer"
+        >
+          <SlidersHorizontal className="h-5 w-5" />
+        </button>
+
         <button
           type="button"
           onClick={onToggleAudio}

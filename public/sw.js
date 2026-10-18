@@ -1,4 +1,4 @@
-const CACHE_NAME = "tabata-pro-v1";
+const CACHE_NAME = "tabata-pro-v2";
 const APP_SHELL_URLS = [
   "/",
   "/workout/new",
@@ -7,6 +7,9 @@ const APP_SHELL_URLS = [
   "/icons/icon-512x512.png",
   "/icons/icon-maskable-512x512.png",
   "/icons/apple-touch-icon.png",
+  "/sounds/gong-single.mp3",
+  "/sounds/gong-double.mp3",
+  "/sounds/gong-triple.mp3",
 ];
 
 self.addEventListener("install", (event) => {
@@ -62,10 +65,11 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Static assets (_next/static, icons, fonts): Stale-While-Revalidate
+  // Static assets (_next/static, icons, sounds, fonts): Stale-While-Revalidate
   if (
     url.pathname.startsWith("/_next/static/") ||
     url.pathname.startsWith("/icons/") ||
+    url.pathname.startsWith("/sounds/") ||
     url.pathname === "/manifest.json"
   ) {
     event.respondWith(
