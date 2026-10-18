@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { CheckCircle2, Home, Play, RotateCcw } from "lucide-react";
+import { SoundSettingsModal } from "@/components/settings/SoundSettingsModal";
 import { TimerControls } from "@/components/timer/TimerControls";
 import { TimerDisplay } from "@/components/timer/TimerDisplay";
 import { TimerHeader } from "@/components/timer/TimerHeader";
@@ -47,6 +48,7 @@ function PlayWorkoutContent() {
   const stop = useTimerStore((s) => s.stop);
 
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isSoundModalOpen, setIsSoundModalOpen] = useState(false);
 
   useEffect(() => {
     hydrateWorkouts();
@@ -56,7 +58,7 @@ function PlayWorkoutContent() {
   const workout = getWorkoutById(id);
 
   useEffect(() => {
-    if (!workoutsHydrated || ! workout) return;
+    if (!workoutsHydrated || !workout) return;
 
     setLastWorkoutId(workout.id);
     start(workout);
@@ -253,6 +255,10 @@ function PlayWorkoutContent() {
         audioEnabled={audioEnabled}
         isFullscreen={isFullscreen}
         onToggleAudio={toggleAudio}
+        onOpenSoundSettings={() => {
+          pause();
+          setIsSoundModalOpen(true);
+        }}
         onToggleFullscreen={handleToggleFullscreen}
         onExit={handleExit}
       />
@@ -292,7 +298,7 @@ function PlayWorkoutContent() {
       </div>
 
       {/* PAUSED OVERLAY */}
-      {timer.status === "paused" && (
+      {timer.status === "paused" && !isSoundModalOpen && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#0A0A0A]/85 px-4 backdrop-blur-md">
           <span className="font-condensed text-sm font-bold uppercase tracking-[0.25em] text-[#FFFF2E]">
             CRONÔMETRO EM ESPERA
@@ -320,6 +326,11 @@ function PlayWorkoutContent() {
           </div>
         </div>
       )}
+
+      <SoundSettingsModal
+        open={isSoundModalOpen}
+        onClose={() => setIsSoundModalOpen(false)}
+      />
     </div>
   );
 }

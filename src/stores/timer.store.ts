@@ -77,8 +77,13 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
     if (steps.length === 0) return;
 
     audioService.unlock();
-    const { audioEnabled, volume, vibrationEnabled } =
-      useSettingsStore.getState();
+    const {
+      audioEnabled,
+      volume,
+      vibrationEnabled,
+      startSound,
+      endSound,
+    } = useSettingsStore.getState();
 
     const nextTimer = applyStepToState(workout, steps, 0, "running");
     set({ timer: nextTimer, lastBeepSecond: null });
@@ -87,7 +92,9 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
       steps[0].type,
       audioEnabled,
       volume,
-      vibrationEnabled
+      vibrationEnabled,
+      startSound,
+      endSound
     );
 
     engineLoop.start(() => {
@@ -153,13 +160,20 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
       activeStatus
     );
 
-    const { audioEnabled, volume, vibrationEnabled } =
-      useSettingsStore.getState();
+    const {
+      audioEnabled,
+      volume,
+      vibrationEnabled,
+      startSound,
+      endSound,
+    } = useSettingsStore.getState();
     audioService.playIntervalTransition(
       timer.steps[nextIdx].type,
       audioEnabled,
       volume,
-      vibrationEnabled
+      vibrationEnabled,
+      startSound,
+      endSound
     );
 
     set({ timer: nextTimer, lastBeepSecond: null });
@@ -193,9 +207,14 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
     const { timer } = get();
     engineLoop.stop();
 
-    const { audioEnabled, volume, vibrationEnabled } =
+    const { audioEnabled, volume, vibrationEnabled, endSound } =
       useSettingsStore.getState();
-    audioService.playWorkoutFinished(audioEnabled, volume, vibrationEnabled);
+    audioService.playWorkoutFinished(
+      audioEnabled,
+      volume,
+      vibrationEnabled,
+      endSound
+    );
 
     set({
       timer: {
