@@ -63,9 +63,13 @@ export default function RootLayout({
   return (
     <html
       lang="pt-BR"
+      suppressHydrationWarning
       className={`${anton.variable} ${barlowCondensed.variable} ${inter.variable} dark h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[#0A0A0A] text-white font-sans selection:bg-[#83FF36] selection:text-[#0A0A0A]">
+      <body
+        suppressHydrationWarning
+        className="min-h-full flex flex-col bg-[#0A0A0A] text-white font-sans selection:bg-[#83FF36] selection:text-[#0A0A0A]"
+      >
         <SwRegister />
         {children}
       </body>

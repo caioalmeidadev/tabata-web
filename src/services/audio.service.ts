@@ -23,8 +23,8 @@ export interface SoundOption<T extends string> {
 export const START_SOUND_OPTIONS: SoundOption<StartTimerSoundId>[] = [
   {
     id: "boxing-bell",
-    name: "Gongo de Boxe",
-    description: "Campainha metálica clássica de início de round",
+    name: "Gongo de Boxe (Real)",
+    description: "Gravação real de gongo metálico de início de round",
   },
   {
     id: "coach-whistle",
@@ -51,8 +51,8 @@ export const START_SOUND_OPTIONS: SoundOption<StartTimerSoundId>[] = [
 export const END_SOUND_OPTIONS: SoundOption<EndTimerSoundId>[] = [
   {
     id: "double-gong",
-    name: "Gongo Duplo de Fim",
-    description: "Duas batidas rápidas no gongo indicando descanso/fim",
+    name: "Gongo Duplo de Fim (Real)",
+    description: "Duas batidas reais no gongo indicando descanso/fim",
   },
   {
     id: "gym-buzzer",
@@ -76,8 +76,16 @@ export const END_SOUND_OPTIONS: SoundOption<EndTimerSoundId>[] = [
   },
 ];
 
+const GONG_AUDIO_URLS = {
+  single: "/sounds/gong-single.mp3",
+  double: "/sounds/gong-double.mp3",
+  triple: "/sounds/gong-triple.mp3",
+} as const;
+
 class AudioAndHapticsService {
   private ctx: AudioContext | null = null;
+  private decodedBuffers: Map<string, AudioBuffer> = new Map();
+  private loadingPromises: Map<string, Promise<AudioBuffer | null>> = new Map();
 
   private getContext(): AudioContext | null {
     if (typeof window === "undefined") return null;
@@ -98,6 +106,82 @@ class AudioAndHapticsService {
 
   public unlock(): void {
     this.getContext();
+    // Preload real gong audio buffers on user interaction
+    this.loadSample(GONG_AUDIO_URLS.single);
+    this.loadSample(GONG_AUDIO_URLS.double);
+    this.loadSample(GONG_AUDIO_URLS.triple);
+  }
+
+  private async loadSample(url: string): Promise<AudioBuffer | null> {
+    if (typeof window === "undefined") return null;
+    const cached = this.decodedBuffers.get(url);
+    if (cached) return cached;
+
+    const existingPromise = this.loadingPromises.get(url);
+    if (existingPromise) return existingPromise;
+
+    const ctx = this.getContext();
+    if (!ctx) return null;
+
+    const promise = fetch(url)
+      .then((res) => res.arrayBuffer())
+      .then((arr) => ctx.decodeAudioData(arr))
+      .then((decoded) => {
+        this.decodedBuffers.set(url, decoded);
+        return decoded;
+      })
+      .catch(() => null);
+
+    this.loadingPromises.set(url, promise);
+    return promise;
+  }
+
+  private playSampleUrl(url: string, volume: number): void {
+    if (typeof window === "undefined" || volume <= 0) return;
+
+    const ctx = this.getContext();
+    const cachedBuffer = this.decodedBuffers.get(url);
+
+    if (ctx && cachedBuffer) {
+      try {
+        const source = ctx.createBufferSource();
+        const gain = ctx.createGain();
+        source.buffer = cachedBuffer;
+        gain.gain.setValueAtTime(Math.min(1, Math.max(0.05, volume)), ctx.currentTime);
+        source.connect(gain);
+        gain.connect(ctx.destination);
+        source.start(0);
+        return;
+      } catch {
+        // Fallback to HTMLAudioElement or async decode below
+      }
+    }
+
+    // Load & play immediately once decoded, or via HTMLAudioElement
+    this.loadSample(url).then((buffer) => {
+      if (ctx && buffer) {
+        try {
+          const source = ctx.createBufferSource();
+          const gain = ctx.createGain();
+          source.buffer = buffer;
+          gain.gain.setValueAtTime(Math.min(1, Math.max(0.05, volume)), ctx.currentTime);
+          source.connect(gain);
+          gain.connect(ctx.destination);
+          source.start(0);
+          return;
+        } catch {
+          // Ignore
+        }
+      }
+
+      try {
+        const audio = new Audio(url);
+        audio.volume = Math.min(1, Math.max(0.05, volume));
+        audio.play().catch(() => {});
+      } catch {
+        // Ignore
+      }
+    });
   }
 
   private playTone(
@@ -185,15 +269,6 @@ class AudioAndHapticsService {
     }
   }
 
-  private triggerBoxingBell(volume: number, offsetSec = 0): void {
-    // Metallic partials for authentic boxing ring bell
-    this.playTone(780, 0.85, volume * 0.9, "sine", offsetSec);
-    this.playTone(1560, 0.65, volume * 0.7, "triangle", offsetSec);
-    this.playTone(2380, 0.45, volume * 0.55, "sine", offsetSec);
-    this.playTone(3120, 0.25, volume * 0.4, "square", offsetSec);
-    this.playNoiseBurst(0.05, volume * 0.6, 2500, offsetSec);
-  }
-
   private triggerWhistle(volume: number, durationSec = 0.38, offsetSec = 0): void {
     const ctx = this.getContext();
     if (!ctx || volume <= 0) return;
@@ -205,7 +280,6 @@ class AudioAndHapticsService {
       const mainGain = ctx.createGain();
       const startTime = ctx.currentTime + offsetSec;
 
-      // Whistle carrier + pea trill modulation (42Hz)
       osc.type = "sine";
       osc.frequency.setValueAtTime(2880, startTime);
 
@@ -234,7 +308,6 @@ class AudioAndHapticsService {
       osc.stop(startTime + durationSec);
       lfo.stop(startTime + durationSec);
 
-      // Breath air noise
       this.playNoiseBurst(durationSec, volume * 0.25, 2900, offsetSec);
     } catch {
       // Ignore audio errors
@@ -249,7 +322,6 @@ class AudioAndHapticsService {
   }
 
   private triggerIronClank(volume: number, offsetSec = 0): void {
-    // Heavy barbell plate clank
     this.playNoiseBurst(0.08, volume * 0.9, 1800, offsetSec);
     this.playTone(420, 0.25, volume * 0.8, "triangle", offsetSec, 180);
     this.playTone(1180, 0.42, volume * 0.7, "sine", offsetSec);
@@ -264,7 +336,6 @@ class AudioAndHapticsService {
   }
 
   private triggerHeavyDrop(volume: number, offsetSec = 0): void {
-    // Sub-bass thud + metallic rattle
     this.playTone(135, 0.38, volume * 1.0, "sine", offsetSec, 32);
     this.playTone(90, 0.32, volume * 0.85, "triangle", offsetSec, 28);
     this.playNoiseBurst(0.14, volume * 0.65, 450, offsetSec);
@@ -277,7 +348,7 @@ class AudioAndHapticsService {
   public playStartSoundById(soundId: StartTimerSoundId, volume: number): void {
     switch (soundId) {
       case "boxing-bell":
-        this.triggerBoxingBell(volume, 0);
+        this.playSampleUrl(GONG_AUDIO_URLS.single, volume);
         break;
       case "coach-whistle":
         this.triggerWhistle(volume, 0.42, 0);
@@ -306,11 +377,10 @@ class AudioAndHapticsService {
   ): void {
     switch (soundId) {
       case "double-gong":
-        this.triggerBoxingBell(volume, 0);
-        this.triggerBoxingBell(volume, 0.24);
-        if (isFinalComplete) {
-          this.triggerBoxingBell(volume, 0.48);
-        }
+        this.playSampleUrl(
+          isFinalComplete ? GONG_AUDIO_URLS.triple : GONG_AUDIO_URLS.double,
+          volume
+        );
         break;
       case "gym-buzzer":
         this.triggerGymBuzzer(volume, isFinalComplete ? 0.85 : 0.5, 0);
