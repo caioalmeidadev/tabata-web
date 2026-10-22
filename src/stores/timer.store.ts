@@ -107,6 +107,7 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
     if (timer.status !== "running") return;
 
     engineLoop.stop();
+    audioService.stop();
     const remainingMs = computeRemainingMs(timer.endsAt);
 
     set({
@@ -183,6 +184,7 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
     const { timer } = get();
     if (!timer.workout || timer.steps.length === 0) return;
 
+    audioService.stop();
     const prevIdx = Math.max(0, timer.currentStepIndex - 1);
     const activeStatus = timer.status === "paused" ? "paused" : "running";
     const nextTimer = applyStepToState(
@@ -197,6 +199,7 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
 
   stop: () => {
     engineLoop.stop();
+    audioService.stop();
     set({
       timer: INITIAL_TIMER_STATE,
       lastBeepSecond: null,

@@ -1,7 +1,8 @@
 import { create } from "zustand";
-import type {
-  EndTimerSoundId,
-  StartTimerSoundId,
+import {
+  audioService,
+  type EndTimerSoundId,
+  type StartTimerSoundId,
 } from "@/services/audio.service";
 import {
   DEFAULT_SETTINGS,
@@ -44,6 +45,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
   },
 
   setAudioEnabled: (audioEnabled) => {
+    if (!audioEnabled) audioService.stop();
     const next: AppSettings = { ...extractSettings(get()), audioEnabled };
     storageService.saveSettings(next);
     set({ audioEnabled });
