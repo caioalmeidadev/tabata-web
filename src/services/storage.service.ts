@@ -1,6 +1,8 @@
-import type {
-  EndTimerSoundId,
-  StartTimerSoundId,
+import {
+  END_SOUND_OPTIONS,
+  START_SOUND_OPTIONS,
+  type EndTimerSoundId,
+  type StartTimerSoundId,
 } from "@/services/audio.service";
 import type { Workout } from "@/types/workout";
 
@@ -25,8 +27,30 @@ export const DEFAULT_SETTINGS: AppSettings = {
   vibrationEnabled: true,
   autoFullscreen: false,
   startSound: "boxing-bell",
-  endSound: "double-gong",
+  endSound: "round-end-bell",
 };
+
+const LEGACY_START_SOUNDS: Record<string, StartTimerSoundId> = {
+  "start-signal": "boxing-bell",
+};
+
+const LEGACY_END_SOUNDS: Record<string, EndTimerSoundId> = {
+  "double-gong": "round-end-bell",
+  "rest-signal": "round-end-bell",
+};
+
+function normalizeSound<T extends string>(
+  value: unknown,
+  options: { id: T }[],
+  legacy: Record<string, T>,
+  fallback: T
+): T {
+  if (typeof value !== "string") return fallback;
+  const migrated = legacy[value];
+  if (migrated) return migrated;
+  if (options.some((option) => option.id === value)) return value as T;
+  return fallback;
+}
 
 function isBrowser(): boolean {
   return (
@@ -68,6 +92,18 @@ export const storageService = {
       return {
         ...DEFAULT_SETTINGS,
         ...parsed,
+        startSound: normalizeSound(
+          parsed.startSound,
+          START_SOUND_OPTIONS,
+          LEGACY_START_SOUNDS,
+          DEFAULT_SETTINGS.startSound
+        ),
+        endSound: normalizeSound(
+          parsed.endSound,
+          END_SOUND_OPTIONS,
+          LEGACY_END_SOUNDS,
+          DEFAULT_SETTINGS.endSound
+        ),
       };
     } catch {
       return DEFAULT_SETTINGS;

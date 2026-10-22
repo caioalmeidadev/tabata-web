@@ -10,6 +10,7 @@ const APP_SHELL_URLS = [
   "/sounds/gong-single.mp3",
   "/sounds/gong-double.mp3",
   "/sounds/gong-triple.mp3",
+  "/sounds/1926.mp3",
 ];
 
 self.addEventListener("install", (event) => {

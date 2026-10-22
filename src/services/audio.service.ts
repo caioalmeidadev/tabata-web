@@ -8,7 +8,7 @@ export type StartTimerSoundId =
   | "digital-beep";
 
 export type EndTimerSoundId =
-  | "double-gong"
+  | "round-end-bell"
   | "gym-buzzer"
   | "double-whistle"
   | "heavy-drop"
@@ -23,8 +23,8 @@ export interface SoundOption<T extends string> {
 export const START_SOUND_OPTIONS: SoundOption<StartTimerSoundId>[] = [
   {
     id: "boxing-bell",
-    name: "Gongo de Boxe (Real)",
-    description: "Gravação real de gongo metálico de início de round",
+    name: "Sino de Boxe",
+    description: "Gravação do sino de boxe",
   },
   {
     id: "coach-whistle",
@@ -50,9 +50,9 @@ export const START_SOUND_OPTIONS: SoundOption<StartTimerSoundId>[] = [
 
 export const END_SOUND_OPTIONS: SoundOption<EndTimerSoundId>[] = [
   {
-    id: "double-gong",
-    name: "Gongo Duplo de Fim (Real)",
-    description: "Duas batidas reais no gongo indicando descanso/fim",
+    id: "round-end-bell",
+    name: "Sino de Fim de Round",
+    description: "Gravação do sino de fim de round",
   },
   {
     id: "gym-buzzer",
@@ -76,16 +76,17 @@ export const END_SOUND_OPTIONS: SoundOption<EndTimerSoundId>[] = [
   },
 ];
 
-const GONG_AUDIO_URLS = {
-  single: "/sounds/gong-single.mp3",
-  double: "/sounds/gong-double.mp3",
-  triple: "/sounds/gong-triple.mp3",
-} as const;
+const BOXING_BELL_URL = "/sounds/1926.mp3";
 
 class AudioAndHapticsService {
   private ctx: AudioContext | null = null;
-  private decodedBuffers: Map<string, AudioBuffer> = new Map();
-  private loadingPromises: Map<string, Promise<AudioBuffer | null>> = new Map();
+  private activeCue: {
+    gain: GainNode;
+    sources: AudioScheduledSourceNode[];
+  } | null = null;
+  private cueToken = 0;
+  private bellBuffer: AudioBuffer | null = null;
+  private bellLoading: Promise<AudioBuffer | null> | null = null;
 
   private getContext(): AudioContext | null {
     if (typeof window === "undefined") return null;
@@ -106,82 +107,47 @@ class AudioAndHapticsService {
 
   public unlock(): void {
     this.getContext();
-    // Preload real gong audio buffers on user interaction
-    this.loadSample(GONG_AUDIO_URLS.single);
-    this.loadSample(GONG_AUDIO_URLS.double);
-    this.loadSample(GONG_AUDIO_URLS.triple);
+    this.loadBoxingBell();
   }
 
-  private async loadSample(url: string): Promise<AudioBuffer | null> {
-    if (typeof window === "undefined") return null;
-    const cached = this.decodedBuffers.get(url);
-    if (cached) return cached;
+  /** Fade and drop the round-end recording so a new cue can take over. */
+  public stop(): void {
+    this.cueToken += 1;
+    const cue = this.activeCue;
+    const ctx = this.ctx;
+    this.activeCue = null;
+    if (!cue || !ctx) return;
 
-    const existingPromise = this.loadingPromises.get(url);
-    if (existingPromise) return existingPromise;
-
-    const ctx = this.getContext();
-    if (!ctx) return null;
-
-    const promise = fetch(url)
-      .then((res) => res.arrayBuffer())
-      .then((arr) => ctx.decodeAudioData(arr))
-      .then((decoded) => {
-        this.decodedBuffers.set(url, decoded);
-        return decoded;
-      })
-      .catch(() => null);
-
-    this.loadingPromises.set(url, promise);
-    return promise;
-  }
-
-  private playSampleUrl(url: string, volume: number): void {
-    if (typeof window === "undefined" || volume <= 0) return;
-
-    const ctx = this.getContext();
-    const cachedBuffer = this.decodedBuffers.get(url);
-
-    if (ctx && cachedBuffer) {
-      try {
-        const source = ctx.createBufferSource();
-        const gain = ctx.createGain();
-        source.buffer = cachedBuffer;
-        gain.gain.setValueAtTime(Math.min(1, Math.max(0.05, volume)), ctx.currentTime);
-        source.connect(gain);
-        gain.connect(ctx.destination);
-        source.start(0);
-        return;
-      } catch {
-        // Fallback to HTMLAudioElement or async decode below
-      }
+    const t = ctx.currentTime;
+    try {
+      cue.gain.gain.cancelScheduledValues(t);
+      cue.gain.gain.setValueAtTime(Math.max(cue.gain.gain.value, 0.0001), t);
+      cue.gain.gain.linearRampToValueAtTime(0.0001, t + 0.04);
+    } catch {
+      // Ignore audio errors when context is blocked
     }
 
-    // Load & play immediately once decoded, or via HTMLAudioElement
-    this.loadSample(url).then((buffer) => {
-      if (ctx && buffer) {
+    const release = () => {
+      for (const source of cue.sources) {
         try {
-          const source = ctx.createBufferSource();
-          const gain = ctx.createGain();
-          source.buffer = buffer;
-          gain.gain.setValueAtTime(Math.min(1, Math.max(0.05, volume)), ctx.currentTime);
-          source.connect(gain);
-          gain.connect(ctx.destination);
-          source.start(0);
-          return;
+          source.stop();
         } catch {
-          // Ignore
+          // Source may already have ended
         }
       }
-
       try {
-        const audio = new Audio(url);
-        audio.volume = Math.min(1, Math.max(0.05, volume));
-        audio.play().catch(() => {});
+        cue.gain.disconnect();
       } catch {
-        // Ignore
+        // Already disconnected
       }
-    });
+    };
+
+    if (typeof window === "undefined") {
+      release();
+      return;
+    }
+
+    window.setTimeout(release, 60);
   }
 
   private playTone(
@@ -342,13 +308,76 @@ class AudioAndHapticsService {
     this.playTone(980, 0.12, volume * 0.35, "triangle", offsetSec + 0.08);
   }
 
+  private loadBoxingBell(): Promise<AudioBuffer | null> {
+    if (typeof window === "undefined") return Promise.resolve(null);
+    if (this.bellBuffer) return Promise.resolve(this.bellBuffer);
+    if (this.bellLoading) return this.bellLoading;
+
+    const ctx = this.getContext();
+    if (!ctx) return Promise.resolve(null);
+
+    this.bellLoading = fetch(BOXING_BELL_URL)
+      .then((response) => {
+        if (!response.ok) throw new Error("missing boxing bell");
+        return response.arrayBuffer();
+      })
+      .then((bytes) => ctx.decodeAudioData(bytes))
+      .then((decoded) => {
+        this.bellBuffer = decoded;
+        return decoded;
+      })
+      .catch(() => null);
+
+    return this.bellLoading;
+  }
+
+  /**
+   * Start and end of round both play /sounds/1926.mp3 unchanged.
+   */
+  private playBoxingBellFile(volume: number): void {
+    const ctx = this.getContext();
+    if (!ctx || volume <= 0) return;
+
+    const token = this.cueToken;
+    const play = (buffer: AudioBuffer) => {
+      if (token !== this.cueToken) return;
+
+      try {
+        const cueGain = ctx.createGain();
+        cueGain.gain.setValueAtTime(
+          Math.min(1, Math.max(0.05, volume)),
+          ctx.currentTime
+        );
+        cueGain.connect(ctx.destination);
+
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(cueGain);
+        this.activeCue = { gain: cueGain, sources: [source] };
+        source.start(0);
+      } catch {
+        // Ignore audio errors when context is blocked
+      }
+    };
+
+    if (this.bellBuffer) {
+      play(this.bellBuffer);
+      return;
+    }
+
+    this.loadBoxingBell().then((buffer) => {
+      if (buffer) play(buffer);
+    });
+  }
+
   /**
    * Play customized start sound (used for WORK start & preview)
    */
   public playStartSoundById(soundId: StartTimerSoundId, volume: number): void {
+    this.stop();
     switch (soundId) {
       case "boxing-bell":
-        this.playSampleUrl(GONG_AUDIO_URLS.single, volume);
+        this.playBoxingBellFile(volume);
         break;
       case "coach-whistle":
         this.triggerWhistle(volume, 0.42, 0);
@@ -375,12 +404,10 @@ class AudioAndHapticsService {
     volume: number,
     isFinalComplete = false
   ): void {
+    this.stop();
     switch (soundId) {
-      case "double-gong":
-        this.playSampleUrl(
-          isFinalComplete ? GONG_AUDIO_URLS.triple : GONG_AUDIO_URLS.double,
-          volume
-        );
+      case "round-end-bell":
+        this.playBoxingBellFile(volume);
         break;
       case "gym-buzzer":
         this.triggerGymBuzzer(volume, isFinalComplete ? 0.85 : 0.5, 0);
@@ -435,7 +462,7 @@ class AudioAndHapticsService {
     volume: number,
     vibrateEnabled: boolean,
     startSound: StartTimerSoundId = "boxing-bell",
-    endSound: EndTimerSoundId = "double-gong"
+    endSound: EndTimerSoundId = "round-end-bell"
   ): void {
     if (enabled) {
       if (intervalType === "work") {
@@ -443,9 +470,12 @@ class AudioAndHapticsService {
       } else if (intervalType === "rest" || intervalType === "cooldown") {
         this.playEndSoundById(endSound, volume, false);
       } else {
+        this.stop();
         // Prepare tone
         this.playTone(523.25, 0.18, volume, "triangle", 0);
       }
+    } else {
+      this.stop();
     }
 
     if (vibrateEnabled) {
@@ -460,10 +490,12 @@ class AudioAndHapticsService {
     enabled: boolean,
     volume: number,
     vibrateEnabled: boolean,
-    endSound: EndTimerSoundId = "double-gong"
+    endSound: EndTimerSoundId = "round-end-bell"
   ): void {
     if (enabled) {
       this.playEndSoundById(endSound, volume, true);
+    } else {
+      this.stop();
     }
 
     if (vibrateEnabled) {
