@@ -24,7 +24,7 @@ export const START_SOUND_OPTIONS: SoundOption<StartTimerSoundId>[] = [
   {
     id: "boxing-bell",
     name: "Sino de Boxe",
-    description: "Gravação do sino de boxe",
+    description: "Toque único do sino de boxe para início de round",
   },
   {
     id: "coach-whistle",
@@ -52,7 +52,7 @@ export const END_SOUND_OPTIONS: SoundOption<EndTimerSoundId>[] = [
   {
     id: "round-end-bell",
     name: "Sino de Fim de Round",
-    description: "Gravação do sino de fim de round",
+    description: "Três toques do sino de boxe indicando descanso/fim",
   },
   {
     id: "gym-buzzer",
@@ -76,7 +76,8 @@ export const END_SOUND_OPTIONS: SoundOption<EndTimerSoundId>[] = [
   },
 ];
 
-const BOXING_BELL_URL = "/sounds/1926.mp3";
+const BOXING_BELL_START_URL = "/sounds/1926-single.mp3";
+const BOXING_BELL_END_URL = "/sounds/1926.mp3";
 
 class AudioAndHapticsService {
   private ctx: AudioContext | null = null;
@@ -85,8 +86,8 @@ class AudioAndHapticsService {
     sources: AudioScheduledSourceNode[];
   } | null = null;
   private cueToken = 0;
-  private bellBuffer: AudioBuffer | null = null;
-  private bellLoading: Promise<AudioBuffer | null> | null = null;
+  private bellBuffers: Map<string, AudioBuffer> = new Map();
+  private bellLoading: Map<string, Promise<AudioBuffer | null>> = new Map();
 
   private getContext(): AudioContext | null {
     if (typeof window === "undefined") return null;
@@ -107,7 +108,8 @@ class AudioAndHapticsService {
 
   public unlock(): void {
     this.getContext();
-    this.loadBoxingBell();
+    this.loadBellBuffer(BOXING_BELL_START_URL);
+    this.loadBellBuffer(BOXING_BELL_END_URL);
   }
 
   /** Fade and drop the round-end recording so a new cue can take over. */
@@ -308,33 +310,37 @@ class AudioAndHapticsService {
     this.playTone(980, 0.12, volume * 0.35, "triangle", offsetSec + 0.08);
   }
 
-  private loadBoxingBell(): Promise<AudioBuffer | null> {
+  private loadBellBuffer(url: string): Promise<AudioBuffer | null> {
     if (typeof window === "undefined") return Promise.resolve(null);
-    if (this.bellBuffer) return Promise.resolve(this.bellBuffer);
-    if (this.bellLoading) return this.bellLoading;
+    const cached = this.bellBuffers.get(url);
+    if (cached) return Promise.resolve(cached);
+
+    const existing = this.bellLoading.get(url);
+    if (existing) return existing;
 
     const ctx = this.getContext();
     if (!ctx) return Promise.resolve(null);
 
-    this.bellLoading = fetch(BOXING_BELL_URL)
+    const loading = fetch(url)
       .then((response) => {
-        if (!response.ok) throw new Error("missing boxing bell");
+        if (!response.ok) throw new Error(`missing bell sample: ${url}`);
         return response.arrayBuffer();
       })
       .then((bytes) => ctx.decodeAudioData(bytes))
       .then((decoded) => {
-        this.bellBuffer = decoded;
+        this.bellBuffers.set(url, decoded);
         return decoded;
       })
       .catch(() => null);
 
-    return this.bellLoading;
+    this.bellLoading.set(url, loading);
+    return loading;
   }
 
   /**
-   * Start and end of round both play /sounds/1926.mp3 unchanged.
+   * Plays a recorded boxing bell MP3 sample (1 strike for start, 3 strikes for end).
    */
-  private playBoxingBellFile(volume: number): void {
+  private playBellFile(url: string, volume: number): void {
     const ctx = this.getContext();
     if (!ctx || volume <= 0) return;
 
@@ -360,12 +366,13 @@ class AudioAndHapticsService {
       }
     };
 
-    if (this.bellBuffer) {
-      play(this.bellBuffer);
+    const cached = this.bellBuffers.get(url);
+    if (cached) {
+      play(cached);
       return;
     }
 
-    this.loadBoxingBell().then((buffer) => {
+    this.loadBellBuffer(url).then((buffer) => {
       if (buffer) play(buffer);
     });
   }
@@ -377,7 +384,7 @@ class AudioAndHapticsService {
     this.stop();
     switch (soundId) {
       case "boxing-bell":
-        this.playBoxingBellFile(volume);
+        this.playBellFile(BOXING_BELL_START_URL, volume);
         break;
       case "coach-whistle":
         this.triggerWhistle(volume, 0.42, 0);
@@ -407,7 +414,7 @@ class AudioAndHapticsService {
     this.stop();
     switch (soundId) {
       case "round-end-bell":
-        this.playBoxingBellFile(volume);
+        this.playBellFile(BOXING_BELL_END_URL, volume);
         break;
       case "gym-buzzer":
         this.triggerGymBuzzer(volume, isFinalComplete ? 0.85 : 0.5, 0);

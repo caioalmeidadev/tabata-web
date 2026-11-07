@@ -1,4 +1,4 @@
-const CACHE_NAME = "tabata-pro-v2";
+const CACHE_NAME = "tabata-pro-v3";
 const APP_SHELL_URLS = [
   "/",
   "/workout/new",
@@ -11,6 +11,7 @@ const APP_SHELL_URLS = [
   "/sounds/gong-double.mp3",
   "/sounds/gong-triple.mp3",
   "/sounds/1926.mp3",
+  "/sounds/1926-single.mp3",
 ];
 
 self.addEventListener("install", (event) => {
