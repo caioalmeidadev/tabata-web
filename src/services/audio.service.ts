@@ -460,6 +460,20 @@ class AudioAndHapticsService {
     }
   }
 
+  public playLapBeep(
+    enabled: boolean,
+    volume: number,
+    vibrateEnabled: boolean
+  ): void {
+    if (enabled) {
+      this.playTone(880, 0.07, volume * 0.85, "sine", 0);
+      this.playTone(1318.5, 0.09, volume * 0.85, "sine", 0.06);
+    }
+    if (vibrateEnabled) {
+      this.vibrate(50);
+    }
+  }
+
   /**
    * Sound & vibration when entering a new interval state
    */
