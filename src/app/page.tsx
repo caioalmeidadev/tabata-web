@@ -3,8 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
+  Flag,
   Flame,
+  Hourglass,
   Maximize2,
+  Play,
   Plus,
   SlidersHorizontal,
   Sparkles,
@@ -152,6 +155,82 @@ export default function DashboardPage() {
                   Iniciar Agora
                 </Button>
               </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* Modos Rápidos: Cronômetro com Voltas & Timer Regressivo */}
+        <section className="flex flex-col gap-4">
+          <div>
+            <h2 className="font-display text-2xl uppercase tracking-wide md:text-3xl">
+              Cronômetro & Timer
+            </h2>
+            <p className="text-xs text-[#9CA3AF] md:text-sm">
+              Modos independentes para marcação livre de voltas ou contagem regressiva direta
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            {/* Card Cronômetro com Voltas */}
+            <div className="flex flex-col justify-between gap-5 rounded-3xl border border-[#249CFF]/30 bg-gradient-to-br from-[#171717] via-[#171717] to-[#249CFF]/10 p-6 transition hover:border-[#249CFF]/50">
+              <div className="flex flex-col gap-2">
+                <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[#249CFF]/15 px-3 py-1 font-condensed text-xs font-bold uppercase tracking-widest text-[#249CFF]">
+                  <Flag className="h-3.5 w-3.5 fill-current" />
+                  VOLTAS SEM INTERRUPÇÃO
+                </div>
+                <h3 className="font-display text-3xl uppercase tracking-wide text-white">
+                  Somente Cronômetro
+                </h3>
+                <p className="text-sm text-[#9CA3AF]">
+                  Contagem progressiva com centésimos de segundo e registro de voltas (parciais) em tempo real sem parar o relógio.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between gap-3 pt-1">
+                <span className="font-condensed text-xs font-bold uppercase tracking-wider text-white/70">
+                  Parciais • Melhor/Pior Volta
+                </span>
+                <Link href="/stopwatch">
+                  <Button
+                    size="sm"
+                    className="bg-[#249CFF] text-[#0A0A0A] hover:bg-[#4cb0ff] shadow-lg shadow-[#249CFF]/15"
+                  >
+                    <Play className="h-4 w-4 fill-current" />
+                    Abrir Cronômetro
+                  </Button>
+                </Link>
+              </div>
+            </div>
+
+            {/* Card Timer Regressivo */}
+            <div className="flex flex-col justify-between gap-5 rounded-3xl border border-[#FFC62E]/30 bg-gradient-to-br from-[#171717] via-[#171717] to-[#FFC62E]/10 p-6 transition hover:border-[#FFC62E]/50">
+              <div className="flex flex-col gap-2">
+                <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[#FFC62E]/15 px-3 py-1 font-condensed text-xs font-bold uppercase tracking-widest text-[#FFC62E]">
+                  <Hourglass className="h-3.5 w-3.5" />
+                  CONTAGEM REGRESSIVA
+                </div>
+                <h3 className="font-display text-3xl uppercase tracking-wide text-white">
+                  Timer Simples
+                </h3>
+                <p className="text-sm text-[#9CA3AF]">
+                  Temporizador direto com escolha rápida de minutos e segundos, ajustes em tempo real (+15s, +30s, +1m) e alarme final.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between gap-3 pt-1">
+                <span className="font-condensed text-xs font-bold uppercase tracking-wider text-white/70">
+                  Presets Rápidos • Alarme Sonoro
+                </span>
+                <Link href="/timer">
+                  <Button
+                    size="sm"
+                    className="bg-[#FFC62E] text-[#0A0A0A] hover:bg-[#ffd259] shadow-lg shadow-[#FFC62E]/15"
+                  >
+                    <Play className="h-4 w-4 fill-current" />
+                    Abrir Timer
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
         </section>
