@@ -52,7 +52,7 @@ export const END_SOUND_OPTIONS: SoundOption<EndTimerSoundId>[] = [
   {
     id: "round-end-bell",
     name: "Sino de Fim de Round",
-    description: "Três toques do sino de boxe indicando descanso/fim",
+    description: "Um toque do sino de boxe (máximo 2s) indicando descanso/fim",
   },
   {
     id: "gym-buzzer",
@@ -77,7 +77,8 @@ export const END_SOUND_OPTIONS: SoundOption<EndTimerSoundId>[] = [
 ];
 
 const BOXING_BELL_START_URL = "/sounds/1926-single.mp3";
-const BOXING_BELL_END_URL = "/sounds/1926.mp3";
+const BOXING_BELL_END_URL = "/sounds/1926-end-single.mp3";
+const BOXING_BELL_END_MAX_DURATION_SEC = 2;
 
 class AudioAndHapticsService {
   private ctx: AudioContext | null = null;
@@ -338,9 +339,13 @@ class AudioAndHapticsService {
   }
 
   /**
-   * Plays a recorded boxing bell MP3 sample (1 strike for start, 3 strikes for end).
+   * Plays a recorded boxing bell MP3 sample (1 strike for start, 1 strike ≤2s for end).
    */
-  private playBellFile(url: string, volume: number): void {
+  private playBellFile(
+    url: string,
+    volume: number,
+    maxDurationSec?: number
+  ): void {
     const ctx = this.getContext();
     if (!ctx || volume <= 0) return;
 
@@ -361,6 +366,9 @@ class AudioAndHapticsService {
         source.connect(cueGain);
         this.activeCue = { gain: cueGain, sources: [source] };
         source.start(0);
+        if (maxDurationSec != null) {
+          source.stop(ctx.currentTime + maxDurationSec);
+        }
       } catch {
         // Ignore audio errors when context is blocked
       }
@@ -414,7 +422,11 @@ class AudioAndHapticsService {
     this.stop();
     switch (soundId) {
       case "round-end-bell":
-        this.playBellFile(BOXING_BELL_END_URL, volume);
+        this.playBellFile(
+          BOXING_BELL_END_URL,
+          volume,
+          BOXING_BELL_END_MAX_DURATION_SEC
+        );
         break;
       case "gym-buzzer":
         this.triggerGymBuzzer(volume, isFinalComplete ? 0.85 : 0.5, 0);
